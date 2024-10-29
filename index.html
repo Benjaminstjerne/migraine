@@ -1,12 +1,10 @@
-Her er en samlet HTML-fil, der opfylder dine krav. Bemærk, at Three.js-biblioteket er inkluderet via en CDN for at holde filen enkel.
-
 <!DOCTYPE html>
 <html lang="da">
 <head>
     <meta charset="UTF-8">
-    <title>Hemiplegisk Migræne Repræsentation</title>
+    <title>Elektrisk Storm - Hemiplegisk Migræne Repræsentation</title>
     <style>
-        body { margin: 0; overflow: hidden; }
+        body { margin: 0; overflow: hidden; background-color: black; }
         canvas { display: block; }
     </style>
 </head>
@@ -14,77 +12,123 @@ Her er en samlet HTML-fil, der opfylder dine krav. Bemærk, at Three.js-bibliote
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-// Opretter scene, kamera og renderer
-var scene = new THREE.Scene();
-var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
-var renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize( window.innerWidth, window.innerHeight );
-document.body.appendChild( renderer.domElement );
-
-// Tilføjer lys
-var light = new THREE.DirectionalLight( 0xffffff, 1 );
-light.position.set(0, 1, 1).normalize();
-scene.add( light );
-
-// Opretter en organisk, kompleks form (fx TorusKnot)
-var geometry = new THREE.TorusKnotGeometry( 10, 3, 100, 16 );
-var material = new THREE.MeshPhongMaterial( { color: 0xff6347, wireframe: false } );
-var mesh = new THREE.Mesh( geometry, material );
-scene.add( mesh );
-
-camera.position.z = 50;
-
-// Animationsloop
-function animate() {
-    requestAnimationFrame( animate );
-    mesh.rotation.x += 0.01;
-    mesh.rotation.y += 0.01;
-    renderer.render( scene, camera );
-}
-animate();
-
-// Fuldskærm ved klik
-document.addEventListener('click', function() {
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen();
-    }
-});
-
-// Reagerer på ordet "migræne"
-if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-    var SpeechRecognition = SpeechRecognition || webkitSpeechRecognition;
-    var recognition = new SpeechRecognition();
-    recognition.lang = 'da-DK';
-    recognition.continuous = true;
-    recognition.interimResults = false;
-    recognition.start();
-
-    recognition.onresult = function(event) {
-        var transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
-        if (transcript.includes('migræne')) {
-            // Ændrer farve for at reagere
-            mesh.material.color.setHex( Math.random() * 0xffffff );
-        }
-    };
-
-    recognition.onerror = function(event) {
-        console.error(event.error);
-    };
-} else {
-    console.log('SpeechRecognition ikke understøttet i denne browser.');
-}
-
-// Justerer til vinduets størrelse
-window.addEventListener( 'resize', onWindowResize, false );
-function onWindowResize(){
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
+    // Opretter scene, kamera og renderer
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 1, 1000 );
+    var renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize( window.innerWidth, window.innerHeight );
-}
+    document.body.appendChild( renderer.domElement );
+
+    // Variabler til lyn
+    var lightningBolts = [];
+    var maxBolts = 10;
+    var boltLife = 20;
+
+    // Funktion til at skabe et lyn
+    function createLightningBolt() {
+        var boltMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
+        var boltGeometry = new THREE.BufferGeometry();
+        var positions = [];
+
+        var x = (Math.random() - 0.5) * 100;
+        var y = 50;
+        var z = (Math.random() - 0.5) * 100;
+
+        positions.push(x, y, z);
+
+        for (var i = 0; i < 10; i++) {
+            x += (Math.random() - 0.5) * 10;
+            y -= Math.random() * 10;
+            z += (Math.random() - 0.5) * 10;
+            positions.push(x, y, z);
+        }
+
+        boltGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+
+        var bolt = new THREE.Line(boltGeometry, boltMaterial);
+        bolt.life = boltLife;
+        scene.add(bolt);
+        lightningBolts.push(bolt);
+    }
+
+    // Opretter initiale lyn
+    for (var i = 0; i < maxBolts; i++) {
+        createLightningBolt();
+    }
+
+    camera.position.z = 100;
+
+    // Animationsloop
+    function animate() {
+        requestAnimationFrame( animate );
+
+        // Opdaterer lyn
+        for (var i = lightningBolts.length - 1; i >= 0; i--) {
+            var bolt = lightningBolts[i];
+            bolt.life--;
+            if (bolt.life <= 0) {
+                scene.remove(bolt);
+                lightningBolts.splice(i, 1);
+                createLightningBolt();
+            }
+        }
+
+        renderer.render( scene, camera );
+    }
+    animate();
+
+    // Fuldskærm ved klik
+    document.addEventListener('click', function() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+        }
+    });
+
+    // Liste over nøgleord
+    var keywords = ['migræne', 'hovedpine', 'lyn', 'smerte', 'storm'];
+
+    // Reagerer på specifikke ord
+    if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+        var SpeechRecognition = SpeechRecognition || webkitSpeechRecognition;
+        var recognition = new SpeechRecognition();
+        recognition.lang = 'da-DK';
+        recognition.continuous = true;
+        recognition.interimResults = false;
+        recognition.start();
+
+        recognition.onresult = function(event) {
+            var transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
+            for (var i = 0; i < keywords.length; i++) {
+                if (transcript.includes(keywords[i])) {
+                    intensifyStorm();
+                    break;
+                }
+            }
+        };
+
+        recognition.onerror = function(event) {
+            console.error(event.error);
+        };
+    } else {
+        console.log('SpeechRecognition ikke understøttet i denne browser.');
+    }
+
+    // Funktion til at intensivere stormen
+    function intensifyStorm() {
+        maxBolts += 5;
+        for (var i = 0; i < 5; i++) {
+            createLightningBolt();
+        }
+    }
+
+    // Justerer til vinduets størrelse
+    window.addEventListener( 'resize', onWindowResize, false );
+    function onWindowResize(){
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize( window.innerWidth, window.innerHeight );
+    }
 </script>
 
 </body>
 </html>
-
-Du kan kopiere denne kode ind i en fil med navnet index.html og uploade den til GitHub Pages for at gøre den tilgængelig som en hjemmeside. Når du klikker på skærmen, vil applikationen gå i fuldskærm, og væsenet vil reagere på ordet "migræne" ved at ændre farve.
-
