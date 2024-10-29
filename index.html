@@ -14,15 +14,15 @@
 <script>
     // Opretter scene, kamera og renderer
     var scene = new THREE.Scene();
-    var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 1, 1000 );
+    var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 1, 2000 );
     var renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize( window.innerWidth, window.innerHeight );
     document.body.appendChild( renderer.domElement );
 
     // Variabler til lyn
     var lightningBolts = [];
-    var maxBolts = 10;
-    var boltLife = 20;
+    var maxBolts = 50; // Øget antal lyn for at fylde skærmen
+    var boltLife = 30; // Forlænget levetid for lynene
 
     // Funktion til at skabe et lyn
     function createLightningBolt() {
@@ -30,16 +30,16 @@
         var boltGeometry = new THREE.BufferGeometry();
         var positions = [];
 
-        var x = (Math.random() - 0.5) * 100;
-        var y = 50;
-        var z = (Math.random() - 0.5) * 100;
+        var x = (Math.random() - 0.5) * 800;
+        var y = (Math.random() - 0.5) * 800;
+        var z = (Math.random() - 0.5) * 800;
 
         positions.push(x, y, z);
 
-        for (var i = 0; i < 10; i++) {
-            x += (Math.random() - 0.5) * 10;
-            y -= Math.random() * 10;
-            z += (Math.random() - 0.5) * 10;
+        for (var i = 0; i < 20; i++) {
+            x += (Math.random() - 0.5) * 80;
+            y += (Math.random() - 0.5) * 80;
+            z += (Math.random() - 0.5) * 80;
             positions.push(x, y, z);
         }
 
@@ -56,11 +56,15 @@
         createLightningBolt();
     }
 
-    camera.position.z = 100;
+    camera.position.z = 0.1; // Ændret kamerapositions for at være inde i stormen
 
     // Animationsloop
     function animate() {
         requestAnimationFrame( animate );
+
+        // Roterer kameraet for at skabe mere dynamisk effekt
+        camera.rotation.x += 0.001;
+        camera.rotation.y += 0.002;
 
         // Opdaterer lyn
         for (var i = lightningBolts.length - 1; i >= 0; i--) {
@@ -115,10 +119,35 @@
 
     // Funktion til at intensivere stormen
     function intensifyStorm() {
-        maxBolts += 5;
-        for (var i = 0; i < 5; i++) {
+        maxBolts += 50; // Øger antallet af lyn markant
+        for (var i = 0; i < 50; i++) {
             createLightningBolt();
         }
+
+        // Tilføjer en hvid flash for at gøre reaktionen mere tydelig
+        flashScreen();
+    }
+
+    // Funktion til at skabe en flash-effekt
+    function flashScreen() {
+        var flash = document.createElement('div');
+        flash.style.position = 'absolute';
+        flash.style.top = '0';
+        flash.style.left = '0';
+        flash.style.width = '100%';
+        flash.style.height = '100%';
+        flash.style.backgroundColor = 'white';
+        flash.style.opacity = '0.8';
+        flash.style.pointerEvents = 'none';
+        document.body.appendChild(flash);
+
+        setTimeout(function() {
+            flash.style.transition = 'opacity 0.5s';
+            flash.style.opacity = '0';
+            setTimeout(function() {
+                document.body.removeChild(flash);
+            }, 500);
+        }, 100);
     }
 
     // Justerer til vinduets størrelse
