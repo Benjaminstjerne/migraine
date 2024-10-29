@@ -1,0 +1,90 @@
+Her er en samlet HTML-fil, der opfylder dine krav. Bemærk, at Three.js-biblioteket er inkluderet via en CDN for at holde filen enkel.
+
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <title>Hemiplegisk Migræne Repræsentation</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// Opretter scene, kamera og renderer
+var scene = new THREE.Scene();
+var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
+var renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+
+// Tilføjer lys
+var light = new THREE.DirectionalLight( 0xffffff, 1 );
+light.position.set(0, 1, 1).normalize();
+scene.add( light );
+
+// Opretter en organisk, kompleks form (fx TorusKnot)
+var geometry = new THREE.TorusKnotGeometry( 10, 3, 100, 16 );
+var material = new THREE.MeshPhongMaterial( { color: 0xff6347, wireframe: false } );
+var mesh = new THREE.Mesh( geometry, material );
+scene.add( mesh );
+
+camera.position.z = 50;
+
+// Animationsloop
+function animate() {
+    requestAnimationFrame( animate );
+    mesh.rotation.x += 0.01;
+    mesh.rotation.y += 0.01;
+    renderer.render( scene, camera );
+}
+animate();
+
+// Fuldskærm ved klik
+document.addEventListener('click', function() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+    }
+});
+
+// Reagerer på ordet "migræne"
+if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+    var SpeechRecognition = SpeechRecognition || webkitSpeechRecognition;
+    var recognition = new SpeechRecognition();
+    recognition.lang = 'da-DK';
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.start();
+
+    recognition.onresult = function(event) {
+        var transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
+        if (transcript.includes('migræne')) {
+            // Ændrer farve for at reagere
+            mesh.material.color.setHex( Math.random() * 0xffffff );
+        }
+    };
+
+    recognition.onerror = function(event) {
+        console.error(event.error);
+    };
+} else {
+    console.log('SpeechRecognition ikke understøttet i denne browser.');
+}
+
+// Justerer til vinduets størrelse
+window.addEventListener( 'resize', onWindowResize, false );
+function onWindowResize(){
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize( window.innerWidth, window.innerHeight );
+}
+</script>
+
+</body>
+</html>
+
+Du kan kopiere denne kode ind i en fil med navnet index.html og uploade den til GitHub Pages for at gøre den tilgængelig som en hjemmeside. Når du klikker på skærmen, vil applikationen gå i fuldskærm, og væsenet vil reagere på ordet "migræne" ved at ændre farve.
+
