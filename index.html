@@ -21,8 +21,8 @@
 
     // Variabler til lyn
     var lightningBolts = [];
-    var maxBolts = 50; // Øget antal lyn for at fylde skærmen
-    var boltLife = 30; // Forlænget levetid for lynene
+    var maxBolts = 50; // Startantal lyn
+    var boltLife = 30; // Levetid for lynene
 
     // Funktion til at skabe et lyn
     function createLightningBolt() {
@@ -56,13 +56,13 @@
         createLightningBolt();
     }
 
-    camera.position.z = 0.1; // Ændret kamerapositions for at være inde i stormen
+    camera.position.z = 0.1; // Placerer kameraet inde i stormen
 
     // Animationsloop
     function animate() {
         requestAnimationFrame( animate );
 
-        // Roterer kameraet for at skabe mere dynamisk effekt
+        // Roterer kameraet for dynamisk effekt
         camera.rotation.x += 0.001;
         camera.rotation.y += 0.002;
 
@@ -88,48 +88,55 @@
         }
     });
 
-    // Liste over nøgleord
-    var keywords = ['migræne', 'hovedpine', 'lyn', 'smerte', 'storm'];
+    // Reagerer på lydens volumen
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+            var audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            var analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+            var source = audioContext.createMediaStreamSource(stream);
+            source.connect(analyser);
 
-    // Reagerer på specifikke ord
-    if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-        var SpeechRecognition = SpeechRecognition || webkitSpeechRecognition;
-        var recognition = new SpeechRecognition();
-        recognition.lang = 'da-DK';
-        recognition.continuous = true;
-        recognition.interimResults = false;
-        recognition.start();
+            var dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-        recognition.onresult = function(event) {
-            var transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
-            for (var i = 0; i < keywords.length; i++) {
-                if (transcript.includes(keywords[i])) {
-                    intensifyStorm();
-                    break;
+            function analyzeAudio() {
+                requestAnimationFrame(analyzeAudio);
+                analyser.getByteFrequencyData(dataArray);
+
+                // Beregner gennemsnitlig amplitude
+                var values = 0;
+                for (var i = 0; i < dataArray.length; i++) {
+                    values += dataArray[i];
+                }
+                var average = values / dataArray.length;
+
+                // Intensiverer stormen baseret på lydniveauet
+                if (average > 50) { // Tærskelværdi for at undgå baggrundsstøj
+                    intensifyStorm(average);
                 }
             }
-        };
-
-        recognition.onerror = function(event) {
-            console.error(event.error);
-        };
+            analyzeAudio();
+        }).catch(function(err) {
+            console.error('Fejl ved adgang til mikrofonen:', err);
+        });
     } else {
-        console.log('SpeechRecognition ikke understøttet i denne browser.');
+        console.log('getUserMedia ikke understøttet i denne browser.');
     }
 
-    // Funktion til at intensivere stormen
-    function intensifyStorm() {
-        maxBolts += 50; // Øger antallet af lyn markant
-        for (var i = 0; i < 50; i++) {
+    // Funktion til at intensivere stormen baseret på lydniveauet
+    function intensifyStorm(volume) {
+        var additionalBolts = Math.min(Math.floor(volume / 5), 100); // Begrænser antallet af ekstra lyn
+        maxBolts += additionalBolts;
+        for (var i = 0; i < additionalBolts; i++) {
             createLightningBolt();
         }
 
-        // Tilføjer en hvid flash for at gøre reaktionen mere tydelig
-        flashScreen();
+        // Flash-effekt proportionel med lydniveauet
+        flashScreen(volume);
     }
 
     // Funktion til at skabe en flash-effekt
-    function flashScreen() {
+    function flashScreen(volume) {
         var flash = document.createElement('div');
         flash.style.position = 'absolute';
         flash.style.top = '0';
@@ -137,7 +144,7 @@
         flash.style.width = '100%';
         flash.style.height = '100%';
         flash.style.backgroundColor = 'white';
-        flash.style.opacity = '0.8';
+        flash.style.opacity = Math.min(volume / 128, 1).toString(); // Justerer opacitet baseret på lydniveau
         flash.style.pointerEvents = 'none';
         document.body.appendChild(flash);
 
